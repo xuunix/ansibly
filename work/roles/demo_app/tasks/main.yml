@@ -1,0 +1,27 @@
+---
+- name: install demo app web component dependencies
+  apt: name={{item}} state=present
+  loop:
+    - python-pip
+    - python-virtualenv
+    - python-mysqldb
+
+- name: copy demo app src
+  copy: src=/work/demo/app/ dest=/var/www/demo mode=0755
+  notify: restart apache2
+
+- name: copy demo.wsgi
+  template : src=demo.wsgi.j2 dest=/var/www/demo/demo.wsgi mode=0755
+  notify: restart apache2
+
+- name: copy apache2 virtual host config
+  copy: src=/work/demo/demo.conf dest=/etc/apache2/sites-available mode=0755
+  notify: restart apache2
+
+- name: setup python virtual environment
+  pip: requirements=/var/www/demo/requirements.txt virtualenv=/var/www/demo/.venv   # This is now on the local server from previous copy
+  notify: restart apache2
+
+- name: activate demo apache site
+  file : src=/etc/apache2/sites-available/demo.conf dest=/etc/apache2/sites-enabled/demo.conf state=link
+  notify: restart apache2
